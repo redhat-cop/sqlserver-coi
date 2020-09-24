@@ -7,6 +7,8 @@
 source ./params.sh
 
 # Tell SQL Server to turn on ha and health monitoring
+echo "Turn on HADR and Health Monitoring for SQL Server"
+
 for server in $ALL_SERVERS
 do
     ssh root@$server '/opt/mssql/bin/mssql-conf set hadr.hadrenabled  1; systemctl restart mssql-server'
@@ -33,8 +35,11 @@ echo "Creating database mirroring endpoints on all instances for replication"
 for server in $ALL_SERVERS
 do
     ssh root@$server "firewall-cmd --zone=public --add-port=$LISTENER_PORT/tcp --permanent; firewall-cmd --reload"
+done
 
-    cat<<__EOF >/tmp/sqlcmd4.$server
+for server in $PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS
+do
+    cat<<__EOF >/tmp/sqlcmd4a.$server
 CREATE ENDPOINT [Hadr_endpoint]
     AS TCP (LISTENER_PORT = $LISTENER_PORT)
     FOR DATABASE_MIRRORING (
@@ -45,13 +50,33 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 GO:
 __EOF
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd4.$server
+
+    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd4a.$server
 
     #cleanup
-    rm /tmp/sqlcmd4.$server
+    rm /tmp/sqlcmd4a.$server
 
-done # for server in $ALL_SERVERS
+done # for server in $PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS
 
+for server in $CONFIG_ONLY_SERVERS
+do
+    cat<<__EOF >/tmp/sqlcmd4b.$server
+CREATE ENDPOINT [Hadr_endpoint]
+    AS TCP (LISTENER_PORT = $LISTENER_PORT)
+    FOR DATABASE_MIRRORING (
+	    ROLE = WITNESS,
+	    AUTHENTICATION = CERTIFICATE dbm_certificate,
+		ENCRYPTION = REQUIRED ALGORITHM AES
+		);
+ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
+GO:
+__EOF
+    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd4b.$server
+
+    #cleanup
+    rm /tmp/sqlcmd4b.$server
+
+done # for server in $CONFIG_ONLY_SERVERS
 
 sleep 3
 echo "Creating the availability group"
@@ -59,7 +84,8 @@ echo "Creating the availability group"
 
 SHORT_NAME=`echo $PRIMARY_SERVER | awk -F . '{ print $1 }'`
  
-cat<<__EOF>/tmp/sqlcmd5
+
+cat<<__EOF >/tmp/sqlcmd5
 CREATE AVAILABILITY GROUP [$AG_NAME]
      WITH (DB_FAILOVER = ON, CLUSTER_TYPE = EXTERNAL)
      FOR REPLICA ON
@@ -75,7 +101,7 @@ for server in $SECONDARY_SERVERS
 do
     SHORT_NAME=`echo $server | awk -F . '{ print $1 }'`
 
-    cat<<__EOF>>/tmp/sqlcmd5
+    cat<<__EOF >>/tmp/sqlcmd5
 ),
 N'$SHORT_NAME'
   WITH (
@@ -90,7 +116,7 @@ for server in $TERTIARY_SERVERS
 do
     SHORT_NAME=`echo $server | awk -F . '{ print $1 }'`
 
-    cat<<__EOF>>/tmp/sqlcmd5
+    cat<<__EOF >>/tmp/sqlcmd5
 ),
 N'$SHORT_NAME'
   WITH (
@@ -101,30 +127,67 @@ N'$SHORT_NAME'
 __EOF
 done # for server in $TERTIARY_SERVERS
 
-cat<<__EOF>>/tmp/sqlcmd5
+for server in $CONFIG_ONLY_SERVERS
+do
+    SHORT_NAME=`echo $server | awk -F . '{ print $1 }'`
+
+    cat<<__EOF >>/tmp/sqlcmd5
+),
+N'$SHORT_NAME'
+  WITH (
+    ENDPOINT_URL = N'tcp://$server:$LISTENER_PORT',
+    AVAILABILITY_MODE = CONFIGURATION_ONLY
+__EOF
+done # for server in $TERTIARY_SERVERS
+
+cat<<__EOF >>/tmp/sqlcmd5
 );
 
 ALTER AVAILABILITY GROUP [$AG_NAME] GRANT CREATE ANY DATABASE;
 GO
 __EOF
 
+echo "Creating $AG_NAME"
 sqlcmd -S $PRIMARY_SERVER -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd5
 
-#cleanup
-rm /tmp/sqlcmd5
 
 for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 do
-    cat<<__EOF>>/tmp/sqlcmd5.$server
+    cat<<__EOF >/tmp/sqlcmd5a.$server
+
 ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = EXTERNAL);
 ALTER AVAILABILITY GROUP [$AG_NAME] GRANT CREATE ANY DATABASE;
 GO
 __EOF
+
+    echo "Joining $server to $AG_NAME"
+    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd5a.$server
+
+    #cleanup
+    rm /tmp/sqlcmd5a.$server
+done #for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
+
+for server in $CONFIG_ONLY_SERVERS
+do
+    cat<<__EOF >/tmp/sqlcmd5b.$server
+ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = EXTERNAL);
+GO
+__EOF
+    echo "Joining configuration-only server $server to $AG_NAME"
+    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd5b.$server
+
+    #cleanup
+    rm /tmp/sqlcmd5b.$server
+done #for server in $CONFIG_ONLY_SERVERS
+
+sleep 3
+echo "Backup the database"
+=======
     sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd5.$server
 done #for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 
 sleep 3
-echo "Bacup the database"
+echo "Backup the database"
 
 cat<<__EOF >/tmp/sqlcmd6.$PRIMARY_SERVER
 ALTER DATABASE [$DB_NAME] SET RECOVERY FULL;
@@ -158,7 +221,8 @@ echo "See if the database was created on the secondary nodes"
 # Now we check to make sure the database was created on the secondaries and tertiaries
 for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 do
-    cat<<__EOF>/tmp/sqlcmd8.$server
+
+    cat<<__EOF >/tmp/sqlcmd8.$server
 SELECT * FROM sys.databases WHERE name = '$DB_NAME';
 GO
 SELECT DB_NAME(database_id) AS 'database', synchronization_state_desc FROM sys.dm_hadr_database_replica_states;

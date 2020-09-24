@@ -13,15 +13,23 @@ PRIMARY_SERVER=sql1.ag1
 # Secondary servers.  You can have up to 5 syncronous replicas
 # You need at least one syncronous replica for automatic failover. 
 # There can be at most 9 servers in a read-write SQL Server Availability Group.
-SECONDARY_SERVERS="sql2.ag1 sql3.ag1"
+
+SECONDARY_SERVERS="sql2.ag1"
+
 
 # Tertiary servers.  You can have up to 8 asyncronous replicas
 # There can be at most 9 servers in a read-write SQL Server Availability Group.
 # Async replicas are manual failover only.
 TERTIARY_SERVERS=""
 
+# Configuration-only servers.  You can use one of these to support Microsoft's three node limit for 
+# Availabiliy Groups (AGs) on Linux, even if you only have two syncronous replicas.  Configuration replicas
+# can use a no-charge SQL Server Express license for the third node. It's only used by the AG to maintain
+# internal quorum.  There's no replication to the node and you'll never actually fail over to it.
+CONFIG_ONLY_SERVERS="sql3.ag1"
+
 # All the servers in the cluster
-ALL_SERVERS="$PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS"
+ALL_SERVERS="$PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS"
 
 # SQL Server administrative login and password
 SQL_ADMIN="sa"
