@@ -13,9 +13,7 @@ PRIMARY_SERVER=sql1.ag1
 # Secondary servers.  You can have up to 5 syncronous replicas
 # You need at least one syncronous replica for automatic failover. 
 # There can be at most 9 servers in a read-write SQL Server Availability Group.
-
 SECONDARY_SERVERS="sql2.ag1"
-
 
 # Tertiary servers.  You can have up to 8 asyncronous replicas
 # There can be at most 9 servers in a read-write SQL Server Availability Group.
