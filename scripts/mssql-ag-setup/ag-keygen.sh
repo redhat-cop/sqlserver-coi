@@ -23,16 +23,20 @@ sqlcmd -S $PRIMARY_SERVER -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd2.$PRIMARY_SE
 rm /tmp/sqlcmd2.$PRIMARY_SERVER
 
 sleep 3
+echo "Copying certificates to secondary, tertiary, and configuration-only servers"
+# Copy the certificates to the secondary, tertiary, and configuration-only servers
+for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS
+do
+    scp root@$PRIMARY_SERVER:/var/opt/mssql/data/dbm_certificate.* root@$server:/var/opt/mssql/data/
+    ssh root@$server chown mssql:mssql /var/opt/mssql/data/dbm_certificate.*
+done # for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS
 
+sleep 3
 echo "Creating certificates to secondary, tertiary, and configuration-only servers"
 # Copy the certificates to the secondary, tertiary, and configuration-only servers
 # Create certificates on these servers
-=======
-echo "Creatingcertificates to secondary and tertiary servers"
-# Copy the certificates to the secondary servers
-# Create certificates on the secondary servers
 # Note that PRIVATE_KEY_PASSWORD is re-used here as the decryption piece
-for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
+for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS
 do
     cat<<__EOF>/tmp/sqlcmd3.$server
 CREATE MASTER KEY ENCRYPTION BY PASSWORD = '$MASTER_KEY_PASSWORD';
