@@ -8,7 +8,7 @@ Enterprise Linux.  Prior to running any of these shell scripts, you should
 modify the configuration variables in the params.sh file.
 
 I also recommend that you temporarily setup ssh root host equvalence between 
-the cluster nodes using ssh-keygen and ssh-copyi-d. This will allow you to 
+the cluster nodes using ssh-keygen and ssh-copy-id. This will allow you to 
 configure the device with mostly passwordless experience. Once the configuration
 process is completed, you should clear unwanted certificates out of the 
 directory: /root/.ssh/
@@ -41,4 +41,6 @@ fence-setup.sh   - this script is reserved for fencing configuration.
 pcs-setup.sh     - this script configures Pacemaker for the cluster
 
 
-
+cleanup.sh       - cleans out the whole configuration (the database is 
+                   backed up as part of the config process so it can
+                   be restored when the scripts are re-run).
