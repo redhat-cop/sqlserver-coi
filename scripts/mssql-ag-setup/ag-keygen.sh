@@ -9,11 +9,11 @@ echo "Setting up the master certificate"
 
 cat<<__EOF>/tmp/sqlcmd2.$PRIMARY_SERVER
 CREATE MASTER KEY ENCRYPTION BY PASSWORD = '$MASTER_KEY_PASSWORD';
-CREATE CERTIFICATE dbm_certificate WITH SUBJECT = 'dbm';
-BACKUP CERTIFICATE dbm_certificate
-   TO FILE = '/var/opt/mssql/data/dbm_certificate.cer'
+CREATE CERTIFICATE $DBM_CERTIFICATE_NAME WITH SUBJECT = 'dbm';
+BACKUP CERTIFICATE $DBM_CERTIFICATE_NAME
+   TO FILE = '/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer'
    WITH PRIVATE KEY (
-           FILE = '/var/opt/mssql/data/dbm_certificate.pvk',
+           FILE = '/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk',
            ENCRYPTION BY PASSWORD = '$PRIVATE_KEY_PASSWORD'
        );
 GO
@@ -27,8 +27,8 @@ echo "Copying certificates to secondary, tertiary, and configuration-only server
 # Copy the certificates to the secondary, tertiary, and configuration-only servers
 for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS
 do
-    scp root@$PRIMARY_SERVER:/var/opt/mssql/data/dbm_certificate.* root@$server:/var/opt/mssql/data/
-    ssh root@$server chown mssql:mssql /var/opt/mssql/data/dbm_certificate.*
+    scp root@$PRIMARY_SERVER:/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.* root@$server:/var/opt/mssql/data/
+    ssh root@$server chown mssql:mssql /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.*
 done # for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS
 
 sleep 3
@@ -40,10 +40,10 @@ for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS
 do
     cat<<__EOF>/tmp/sqlcmd3.$server
 CREATE MASTER KEY ENCRYPTION BY PASSWORD = '$MASTER_KEY_PASSWORD';
-CREATE CERTIFICATE dbm_certificate
-    FROM FILE = '/var/opt/mssql/data/dbm_certificate.cer'
+CREATE CERTIFICATE $DBM_CERTIFICATE_NAME
+    FROM FILE = '/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer'
     WITH PRIVATE KEY (
-    FILE = '/var/opt/mssql/data/dbm_certificate.pvk',
+    FILE = '/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk',
     DECRYPTION BY PASSWORD = '$PRIVATE_KEY_PASSWORD'
             );
 GO
