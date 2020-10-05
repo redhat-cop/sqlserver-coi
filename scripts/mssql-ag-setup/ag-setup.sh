@@ -5,6 +5,7 @@
 
 # Bring in the configuration parameters
 source ./params.sh
+source ./functions.sh
 
 # Tell SQL Server to turn on ha and health monitoring
 echo "Turn on HADR and Health Monitoring for SQL Server"
@@ -20,10 +21,8 @@ do
 ALTER EVENT SESSION  AlwaysOn_health ON SERVER WITH (STARTUP_STATE=ON);
 GO
 __EOF
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd1.$server
-
-    #cleanup
-    rm /tmp/sqlcmd1.$server
+    
+    runsqlcmd $server "/tmp/sqlcmd1.$server"
 
 done # for server in $ALL_SERVERS
 
@@ -49,10 +48,8 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 GO:
 __EOF
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd4a.$server
 
-    #cleanup
-    rm /tmp/sqlcmd4a.$server
+    runsqlcmd $server "/tmp/sqlcmd4a.$server"
 
 done # for server in $PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS
 
@@ -69,10 +66,7 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 GO:
 __EOF
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd4b.$server
-
-    #cleanup
-    rm /tmp/sqlcmd4b.$server
+    runsqlcmd $server "/tmp/sqlcmd4b.$server"
 
 done # for server in $CONFIG_ONLY_SERVERS
 
@@ -146,7 +140,7 @@ GO
 __EOF
 
 echo "Creating $AG_NAME"
-sqlcmd -S $PRIMARY_SERVER -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd5
+runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd5"
 
 
 for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
@@ -156,11 +150,10 @@ ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = EXTERNAL);
 ALTER AVAILABILITY GROUP [$AG_NAME] GRANT CREATE ANY DATABASE;
 GO
 __EOF
-    echo "Joining $server to $AG_NAME"
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd5a.$server
 
-    #cleanup
-    rm /tmp/sqlcmd5a.$server
+    echo "Joining $server to $AG_NAME"
+    runsqlcmd $server "/tmp/sqlcmd5a.$server"
+
 done #for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 
 for server in $CONFIG_ONLY_SERVERS
@@ -170,10 +163,8 @@ ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = EXTERNAL);
 GO
 __EOF
     echo "Joining configuration-only server $server to $AG_NAME"
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd5b.$server
+    runsqlcmd $server "/tmp/sqlcmd5b.$server"
 
-    #cleanup
-    rm /tmp/sqlcmd5b.$server
 done #for server in $CONFIG_ONLY_SERVERS
 
 sleep 3
@@ -186,10 +177,7 @@ BACKUP DATABASE [$DB_NAME]
 GO
 __EOF
 
-sqlcmd -S $PRIMARY_SERVER -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd6.$PRIMARY_SERVER
-
-#cleanup
-rm /tmp/sqlcmd6.$PRIMARY_SERVER
+runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd6.$PRIMARY_SERVER"
 
 sleep 3
 echo "Add the databae to the AG and replicate it"
@@ -198,10 +186,8 @@ cat<<__EOF >/tmp/sqlcmd7.$PRIMARY_SERVER
 ALTER AVAILABILITY GROUP [$AG_NAME] ADD DATABASE [$DB_NAME];
 GO
 __EOF
-sqlcmd -S $PRIMARY_SERVER -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd7.$PRIMARY_SERVER
 
-#cleanup
-rm /tmp/sqlcmd7.$PRIMARY_SERVER
+runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd7.$PRIMARY_SERVER"
 
 echo "Give the database time to replicate"
 
@@ -218,10 +204,8 @@ SELECT DB_NAME(database_id) AS 'database', synchronization_state_desc FROM sys.d
 GO
 quit
 __EOF
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd8.$server
 
-    #cleanup
-    rm /tmp/sqlcmd8.$server
+    runsqlcmd $server "/tmp/sqlcmd8.$server"
 
 done # for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 

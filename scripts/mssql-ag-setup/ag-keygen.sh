@@ -3,6 +3,9 @@
 # Bring in the configuration parameters
 source ./params.sh
 
+# Load generic functions
+source ./functions.sh
+
 # Set up the master certificate
 echo "Setting up the master certificate"
 
@@ -18,9 +21,7 @@ BACKUP CERTIFICATE $DBM_CERTIFICATE_NAME
        );
 GO
 __EOF
-sqlcmd -S $PRIMARY_SERVER -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd2.$PRIMARY_SERVER
-#cleanup
-rm /tmp/sqlcmd2.$PRIMARY_SERVER
+runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd2.$PRIMARY_SERVER"
 
 sleep 3
 echo "Copying certificates to secondary, tertiary, and configuration-only servers"
@@ -48,9 +49,6 @@ CREATE CERTIFICATE $DBM_CERTIFICATE_NAME
             );
 GO
 __EOF
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd3.$server
-
-    #cleanup
-    rm /tmp/sqlcmd3.$server
+    runsqlcmd $server "/tmp/sqlcmd3.$server"
 
 done # for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS

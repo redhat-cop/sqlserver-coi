@@ -5,6 +5,7 @@
 
 # Bring in the configuration parameters
 source ./params.sh
+source ./functions.sh
 
 echo "Setting password for hacluster account and enabling RHEL HA Add-On"
 for server in $ALL_SERVERS
@@ -31,10 +32,8 @@ CREATE LOGIN [pacemakerLogin] with PASSWORD= N'$PACEMAKER_SQL_PW'
 ALTER SERVER ROLE [sysadmin] ADD MEMBER [pacemakerLogin]
 GO
 __EOF
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd9.$server
 
-    #cleanup
-    rm /tmp/sqlcmd9.$server
+    runsqlcmd $server "/tmp/sqlcmd9.$server"
 
     ssh root@$server "printf \"pacemakerLogin\\n$PACEMAKER_SQL_PW\\n\" > $PACEMAKER_SQL_PW_FILE; chown root:root $PACEMAKER_SQL_PW_FILE; chmod 400 $PACEMAKER_SQL_PW_FILE"
 
@@ -42,10 +41,8 @@ __EOF
 GRANT ALTER, CONTROL, VIEW DEFINITION ON AVAILABILITY GROUP::$AG_NAME TO pacemakerLogin
 GRANT VIEW SERVER STATE TO pacemakerLogin
 __EOF
-    sqlcmd -S $server -U $SQL_ADMIN -P $SQL_PASS -i /tmp/sqlcmd10.$server
 
-    #cleanup
-    rm /tmp/sqlcmd10.$server
+    runsqlcmd $server "/tmp/sqlcmd10.$server"
 
 done # for server in $ALL_SERVERS
 
