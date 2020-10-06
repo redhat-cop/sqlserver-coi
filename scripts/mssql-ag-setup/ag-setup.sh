@@ -17,12 +17,12 @@ done # for server in $ALL_SERVERS
 sleep 10
 for server in $ALL_SERVERS
 do
-    cat<<__EOF >/tmp/sqlcmd1.$server
+    cat<<__EOF >/tmp/sqlcmd-ag-setup1.$server
 ALTER EVENT SESSION  AlwaysOn_health ON SERVER WITH (STARTUP_STATE=ON);
 GO
 __EOF
     
-    runsqlcmd $server "/tmp/sqlcmd1.$server"
+    runsqlcmd $server "/tmp/sqlcmd-ag-setup1.$server"
 
 done # for server in $ALL_SERVERS
 
@@ -37,7 +37,7 @@ done
 
 for server in $PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS
 do
-    cat<<__EOF >/tmp/sqlcmd4a.$server
+    cat<<__EOF >/tmp/sqlcmd-ag-setup2.$server
 CREATE ENDPOINT [Hadr_endpoint]
     AS TCP (LISTENER_PORT = $LISTENER_PORT)
     FOR DATABASE_MIRRORING (
@@ -49,13 +49,13 @@ ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 GO:
 __EOF
 
-    runsqlcmd $server "/tmp/sqlcmd4a.$server"
+    runsqlcmd $server "/tmp/sqlcmd-ag-setup2.$server"
 
 done # for server in $PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS
 
 for server in $CONFIG_ONLY_SERVERS
 do
-    cat<<__EOF >/tmp/sqlcmd4b.$server
+    cat<<__EOF >/tmp/sqlcmd-ag-setup3.$server
 CREATE ENDPOINT [Hadr_endpoint]
     AS TCP (LISTENER_PORT = $LISTENER_PORT)
     FOR DATABASE_MIRRORING (
@@ -66,7 +66,7 @@ CREATE ENDPOINT [Hadr_endpoint]
 ALTER ENDPOINT [Hadr_endpoint] STATE = STARTED;
 GO:
 __EOF
-    runsqlcmd $server "/tmp/sqlcmd4b.$server"
+    runsqlcmd $server "/tmp/sqlcmd-ag-setup3.$server"
 
 done # for server in $CONFIG_ONLY_SERVERS
 
@@ -77,7 +77,7 @@ echo "Creating the availability group"
 
 SHORT_NAME=`echo $PRIMARY_SERVER | awk -F . '{ print $1 }'`
  
-cat<<__EOF >/tmp/sqlcmd5
+cat<<__EOF >/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER
 CREATE AVAILABILITY GROUP [$AG_NAME]
      WITH (DB_FAILOVER = ON, CLUSTER_TYPE = EXTERNAL)
      FOR REPLICA ON
@@ -93,7 +93,7 @@ for server in $SECONDARY_SERVERS
 do
     SHORT_NAME=`echo $server | awk -F . '{ print $1 }'`
 
-    cat<<__EOF >>/tmp/sqlcmd5
+    cat<<__EOF >>/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER
 ),
 N'$SHORT_NAME'
   WITH (
@@ -108,7 +108,7 @@ for server in $TERTIARY_SERVERS
 do
     SHORT_NAME=`echo $server | awk -F . '{ print $1 }'`
 
-    cat<<__EOF >>/tmp/sqlcmd5
+    cat<<__EOF >>/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER
 ),
 N'$SHORT_NAME'
   WITH (
@@ -123,7 +123,7 @@ for server in $CONFIG_ONLY_SERVERS
 do
     SHORT_NAME=`echo $server | awk -F . '{ print $1 }'`
 
-    cat<<__EOF >>/tmp/sqlcmd5
+    cat<<__EOF >>/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER
 ),
 N'$SHORT_NAME'
   WITH (
@@ -132,7 +132,7 @@ N'$SHORT_NAME'
 __EOF
 done # for server in $TERTIARY_SERVERS
 
-cat<<__EOF >>/tmp/sqlcmd5
+cat<<__EOF >>/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER
 );
 
 ALTER AVAILABILITY GROUP [$AG_NAME] GRANT CREATE ANY DATABASE;
@@ -140,54 +140,54 @@ GO
 __EOF
 
 echo "Creating $AG_NAME"
-runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd5"
+runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER"
 
 
 for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 do
-    cat<<__EOF >/tmp/sqlcmd5a.$server
+    cat<<__EOF >/tmp/sqlcmd-ag-setup5.$server
 ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = EXTERNAL);
 ALTER AVAILABILITY GROUP [$AG_NAME] GRANT CREATE ANY DATABASE;
 GO
 __EOF
 
     echo "Joining $server to $AG_NAME"
-    runsqlcmd $server "/tmp/sqlcmd5a.$server"
+    runsqlcmd $server "/tmp/sqlcmd-ag-setup5.$server"
 
 done #for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 
 for server in $CONFIG_ONLY_SERVERS
 do
-    cat<<__EOF >/tmp/sqlcmd5b.$server
+    cat<<__EOF >/tmp/sqlcmd-ag-setup6.$server
 ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = EXTERNAL);
 GO
 __EOF
     echo "Joining configuration-only server $server to $AG_NAME"
-    runsqlcmd $server "/tmp/sqlcmd5b.$server"
+    runsqlcmd $server "/tmp/sqlcmd-ag-setup6.$server"
 
 done #for server in $CONFIG_ONLY_SERVERS
 
 sleep 3
 echo "Backup the database"
 
-cat<<__EOF >/tmp/sqlcmd6.$PRIMARY_SERVER
+cat<<__EOF >/tmp/sqlcmd-ag-setup7.$PRIMARY_SERVER
 ALTER DATABASE [$DB_NAME] SET RECOVERY FULL;
 BACKUP DATABASE [$DB_NAME]
   TO DISK = N'$DB_BKUP_PATH';
 GO
 __EOF
 
-runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd6.$PRIMARY_SERVER"
+runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-ag-setup7.$PRIMARY_SERVER"
 
 sleep 3
 echo "Add the databae to the AG and replicate it"
 # Add the database to the AG and replicate it
-cat<<__EOF >/tmp/sqlcmd7.$PRIMARY_SERVER
+cat<<__EOF >/tmp/sqlcmd-ag-setup8.$PRIMARY_SERVER
 ALTER AVAILABILITY GROUP [$AG_NAME] ADD DATABASE [$DB_NAME];
 GO
 __EOF
 
-runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd7.$PRIMARY_SERVER"
+runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-ag-setup8.$PRIMARY_SERVER"
 
 echo "Give the database time to replicate"
 
@@ -197,7 +197,7 @@ echo "See if the database was created on the secondary nodes"
 # Now we check to make sure the database was created on the secondaries and tertiaries
 for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 do
-    cat<<__EOF >/tmp/sqlcmd8.$server
+    cat<<__EOF >/tmp/sqlcmd-ag-setup9.$server
 SELECT * FROM sys.databases WHERE name = '$DB_NAME';
 GO
 SELECT DB_NAME(database_id) AS 'database', synchronization_state_desc FROM sys.dm_hadr_database_replica_states;
@@ -205,7 +205,7 @@ GO
 quit
 __EOF
 
-    runsqlcmd $server "/tmp/sqlcmd8.$server"
+    runsqlcmd $server "/tmp/sqlcmd-ag-setup9.$server"
 
 done # for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 

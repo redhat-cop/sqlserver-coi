@@ -10,7 +10,7 @@ source ./functions.sh
 echo "Setting up the master certificate"
 
 
-cat<<__EOF>/tmp/sqlcmd2.$PRIMARY_SERVER
+cat<<__EOF>/tmp/sqlcmd-ag-keygen1.$PRIMARY_SERVER
 CREATE MASTER KEY ENCRYPTION BY PASSWORD = '$MASTER_KEY_PASSWORD';
 CREATE CERTIFICATE $DBM_CERTIFICATE_NAME WITH SUBJECT = 'dbm';
 BACKUP CERTIFICATE $DBM_CERTIFICATE_NAME
@@ -21,7 +21,8 @@ BACKUP CERTIFICATE $DBM_CERTIFICATE_NAME
        );
 GO
 __EOF
-runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd2.$PRIMARY_SERVER"
+
+runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-ag-keygen1.$PRIMARY_SERVER"
 
 sleep 3
 echo "Copying certificates to secondary, tertiary, and configuration-only servers"
@@ -39,7 +40,7 @@ echo "Creating certificates to secondary, tertiary, and configuration-only serve
 # Note that PRIVATE_KEY_PASSWORD is re-used here as the decryption piece
 for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS
 do
-    cat<<__EOF>/tmp/sqlcmd3.$server
+    cat<<__EOF>/tmp/sqlcmd-ag-keygen2.$server
 CREATE MASTER KEY ENCRYPTION BY PASSWORD = '$MASTER_KEY_PASSWORD';
 CREATE CERTIFICATE $DBM_CERTIFICATE_NAME
     FROM FILE = '/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer'
@@ -49,6 +50,7 @@ CREATE CERTIFICATE $DBM_CERTIFICATE_NAME
             );
 GO
 __EOF
-    runsqlcmd $server "/tmp/sqlcmd3.$server"
+
+    runsqlcmd $server "/tmp/sqlcmd-ag-keygen2.$server"
 
 done # for server in $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS

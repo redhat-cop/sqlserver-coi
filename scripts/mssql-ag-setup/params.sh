@@ -2,6 +2,12 @@
 
 # This file contains the parameters used by all of the other scripts
 
+
+# Debug mode.  If set to 1, then unsuccesful sql commands are saved
+# to /tmp.  We do not save them there by default since they can
+# contain passwords.
+DEBUG_MODE=0
+
 # Update PATH to include sqlcmd as it will be needed
 PATH=$PATH:/opt/mssql-tools/bin
 
@@ -58,3 +64,4 @@ PRIVATE_KEY_PASSWORD='w22yQeEXW9cjvr2hRig'
 
 # Name for certificates
 DBM_CERTIFICATE_NAME="dbm_certificate"
+

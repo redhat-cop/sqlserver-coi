@@ -19,8 +19,6 @@ The following scripts are available:
 params.sh        - contains the parameters all of the scripts use to configure 
                    SQL Server.
 
-functions.sh     - common functions used by the different scripts
-
 all-setup.sh     - calls all the other scripts in this directory.  Comment out 
                    any you don't need.
 
@@ -42,6 +40,5 @@ fence-setup.sh   - this script is reserved for fencing configuration.
 
 pcs-setup.sh     - this script configures Pacemaker for the cluster
 
-cleanup.sh       - this script attempts to cleanup everything then restores
-                   the most recent database backup associated with the AG 
-                   to the primary node. Usefull for demos.
+
+

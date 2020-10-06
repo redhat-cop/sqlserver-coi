@@ -25,7 +25,7 @@ PACEMAKER_SQL_PW='f9YHkyxHb8vlP0rC3g4'
 PACEMAKER_SQL_PW_FILE="/var/opt/mssql/secrets/passwd"
 for server in $ALL_SERVERS
 do
-    cat<<__EOF>/tmp/sqlcmd9.$server
+    cat<<__EOF>/tmp/sqlcmd-pcs-setup1.$server
 USE [master]
 GO
 CREATE LOGIN [pacemakerLogin] with PASSWORD= N'$PACEMAKER_SQL_PW'
@@ -33,16 +33,16 @@ ALTER SERVER ROLE [sysadmin] ADD MEMBER [pacemakerLogin]
 GO
 __EOF
 
-    runsqlcmd $server "/tmp/sqlcmd9.$server"
+    runsqlcmd $server "/tmp/sqlcmd-pcs-setup1.$server"
 
     ssh root@$server "printf \"pacemakerLogin\\n$PACEMAKER_SQL_PW\\n\" > $PACEMAKER_SQL_PW_FILE; chown root:root $PACEMAKER_SQL_PW_FILE; chmod 400 $PACEMAKER_SQL_PW_FILE"
 
-    cat<<__EOF>/tmp/sqlcmd10.$server
+    cat<<__EOF>/tmp/sqlcmd-pcs-setup2.$server
 GRANT ALTER, CONTROL, VIEW DEFINITION ON AVAILABILITY GROUP::$AG_NAME TO pacemakerLogin
 GRANT VIEW SERVER STATE TO pacemakerLogin
 __EOF
 
-    runsqlcmd $server "/tmp/sqlcmd10.$server"
+    runsqlcmd $server "/tmp/sqlcmd-pcs-setup2.$server"
 
 done # for server in $ALL_SERVERS
 
@@ -50,7 +50,7 @@ sleep 3
 echo "Setup the pacemaker cluster"
 # Now setup and start the cluster
 echo "For now, we have to enter in hacluster account and passwd"
-ssh root@$PRIMARY_SERVER pcs host auth $ALL_SERVERS
+ssh root@$PRIMARY_SERVER pcs host auth -u hacluster -p $HACLUSTER_PW $ALL_SERVERS 
 ssh root@$PRIMARY_SERVER pcs cluster setup $AG_NAME $ALL_SERVERS
 ssh root@$PRIMARY_SERVER "pcs cluster start --all; sudo pcs cluster enable --all"
 ssh root@$PRIMARY_SERVER pcs cluster auth -u hacluster -p $HACLUSTER_PW
