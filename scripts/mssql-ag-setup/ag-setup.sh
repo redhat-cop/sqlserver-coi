@@ -35,7 +35,7 @@ do
     ssh root@$server "firewall-cmd --zone=public --add-port=$LISTENER_PORT/tcp --permanent; firewall-cmd --reload"
 done
 
-for server in $PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS
+for server in $PRIMARY_SERVER $SYNC_SERVERS $ASYNC_SERVERS
 do
     cat<<__EOF >/tmp/sqlcmd-ag-setup2.$server
 CREATE ENDPOINT [Hadr_endpoint]
@@ -51,7 +51,7 @@ __EOF
 
     runsqlcmd $server "/tmp/sqlcmd-ag-setup2.$server"
 
-done # for server in $PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS
+done # for server in $PRIMARY_SERVER $SYNC_SERVERS $ASYNC_SERVERS
 
 for server in $CONFIG_ONLY_SERVERS
 do
@@ -89,7 +89,7 @@ N'$SHORT_NAME'
     SEEDING_MODE = AUTOMATIC
 __EOF
 
-for server in $SECONDARY_SERVERS
+for server in $SYNC_SERVERS
 do
     SHORT_NAME=`echo $server | awk -F . '{ print $1 }'`
 
@@ -102,9 +102,9 @@ N'$SHORT_NAME'
     FAILOVER_MODE = EXTERNAL,
     SEEDING_MODE = AUTOMATIC
 __EOF
-done # for server in $SECONDARY_SERVERS
+done # for server in $SYNC_SERVERS
 
-for server in $TERTIARY_SERVERS
+for server in $ASYNC_SERVERS
 do
     SHORT_NAME=`echo $server | awk -F . '{ print $1 }'`
 
@@ -117,7 +117,7 @@ N'$SHORT_NAME'
     FAILOVER_MODE = EXTERNAL,
     SEEDING_MODE = AUTOMATIC
 __EOF
-done # for server in $TERTIARY_SERVERS
+done # for server in $ASYNC_SERVERS
 
 for server in $CONFIG_ONLY_SERVERS
 do
@@ -130,7 +130,7 @@ N'$SHORT_NAME'
     ENDPOINT_URL = N'tcp://$server:$LISTENER_PORT',
     AVAILABILITY_MODE = CONFIGURATION_ONLY
 __EOF
-done # for server in $TERTIARY_SERVERS
+done # for server in $ASYNC_SERVERS
 
 cat<<__EOF >>/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER
 );
@@ -143,7 +143,7 @@ echo "Creating $AG_NAME"
 runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER"
 
 
-for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
+for server in $SYNC_SERVERS $ASYNC_SERVERS
 do
     cat<<__EOF >/tmp/sqlcmd-ag-setup5.$server
 ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = EXTERNAL);
@@ -154,7 +154,7 @@ __EOF
     echo "Joining $server to $AG_NAME"
     runsqlcmd $server "/tmp/sqlcmd-ag-setup5.$server"
 
-done #for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
+done #for server in $SYNC_SERVERS $ASYNC_SERVERS
 
 for server in $CONFIG_ONLY_SERVERS
 do
@@ -192,10 +192,10 @@ runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-ag-setup8.$PRIMARY_SERVER"
 echo "Give the database time to replicate"
 
 sleep 30
-echo "See if the database was created on the secondary nodes"
+echo "See if the database was created on the sync and async replica servers"
 
-# Now we check to make sure the database was created on the secondaries and tertiaries
-for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
+# Now we check to make sure the database was created on the sync and async servers
+for server in $SYNC_SERVERS $ASYNC_SERVERS
 do
     cat<<__EOF >/tmp/sqlcmd-ag-setup9.$server
 SELECT * FROM sys.databases WHERE name = '$DB_NAME';
@@ -207,6 +207,6 @@ __EOF
 
     runsqlcmd $server "/tmp/sqlcmd-ag-setup9.$server"
 
-done # for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
+done # for server in $SYNC_SERVERS $ASYNC_SERVERS
 
 

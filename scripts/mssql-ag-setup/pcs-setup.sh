@@ -16,13 +16,9 @@ __EOF
     ssh root@$server "systemctl enable pcsd;sudo systemctl start pcsd; sudo systemctl enable pacemaker"
 done # for server in $ALL_SERVERS
 
-# Install the SQL Server resource agent on all nodes
-sleep 3
-
 echo "Create a SQL Server login for Pacemaker on all servers"
+
 # Create a SQL Server login for Pacemaker on all servers
-PACEMAKER_SQL_PW='f9YHkyxHb8vlP0rC3g4'
-PACEMAKER_SQL_PW_FILE="/var/opt/mssql/secrets/passwd"
 for server in $ALL_SERVERS
 do
     cat<<__EOF>/tmp/sqlcmd-pcs-setup1.$server
@@ -49,7 +45,6 @@ done # for server in $ALL_SERVERS
 sleep 3
 echo "Setup the pacemaker cluster"
 # Now setup and start the cluster
-echo "For now, we have to enter in hacluster account and passwd"
 ssh root@$PRIMARY_SERVER pcs host auth -u hacluster -p $HACLUSTER_PW $ALL_SERVERS 
 ssh root@$PRIMARY_SERVER pcs cluster setup $AG_NAME $ALL_SERVERS
 ssh root@$PRIMARY_SERVER "pcs cluster start --all; sudo pcs cluster enable --all"
@@ -80,10 +75,4 @@ sleep 3
 echo "Add an ordering constraint"
 # Add an ordering constraint
 ssh root@$PRIMARY_SERVER pcs constraint order promote ag_cluster-clone then start virtualip
-
-sleep 3
-echo "Turn on fencing. This watchdog timer is all you need for barmetal/KVM"
-# Enable fencing, on baremetal or KVM we just use a watchdog timer
-ssh root@$PRIMARY_SERVER  pcs property set stonith-watchdog-timeout=10s
-ssh root@$PRIMARY_SERVER pcs stonith sbd enable
 

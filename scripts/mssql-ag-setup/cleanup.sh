@@ -38,7 +38,7 @@ done
 
 
 echo "Removing any replica server configurations"
-for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
+for server in $SYNC_SERVERS $ASYNC_SERVERS
 do
 	cat<<__EOF>/tmp/sqlcmd-cleanup3.$server
 DROP LOGIN [pacemakerLogin];

@@ -16,15 +16,15 @@ PATH=$PATH:/opt/mssql-tools/bin
 # There can be at most 9 servers in a writeable SQL Server Availability Group.
 PRIMARY_SERVER=sql1.ag1
 
-# Secondary servers.  You can have up to 5 syncronous replicas
+# Sync replica servers.  You can have up to 5 syncronous replicas
 # You need at least one syncronous replica for automatic failover. 
 # There can be at most 9 servers in a read-write SQL Server Availability Group.
-SECONDARY_SERVERS="sql2.ag1"
+SYNC_SERVERS="sql2.ag1"
 
-# Tertiary servers.  You can have up to 8 asyncronous replicas
+# Async replica servers.  You can have up to 8 asyncronous replicas
 # There can be at most 9 servers in a read-write SQL Server Availability Group.
 # Async replicas are manual failover only.
-TERTIARY_SERVERS=""
+ASYNC_SERVERS=""
 
 # Configuration-only servers.  You can use one of these to support Microsoft's three node limit for 
 # Availabiliy Groups (AGs) on Linux, even if you only have two syncronous replicas.  Configuration replicas
@@ -33,7 +33,7 @@ TERTIARY_SERVERS=""
 CONFIG_ONLY_SERVERS="sql3.ag1"
 
 # All the servers in the cluster
-ALL_SERVERS="$PRIMARY_SERVER $SECONDARY_SERVERS $TERTIARY_SERVERS $CONFIG_ONLY_SERVERS"
+ALL_SERVERS="$PRIMARY_SERVER $SYNC_SERVERS $ASYNC_SERVERS $CONFIG_ONLY_SERVERS"
 
 # SQL Server administrative login and password
 SQL_ADMIN="sa"
@@ -65,3 +65,5 @@ PRIVATE_KEY_PASSWORD='w22yQeEXW9cjvr2hRig'
 # Name for certificates
 DBM_CERTIFICATE_NAME="dbm_certificate"
 
+PACEMAKER_SQL_PW='f9YHkyxHb8vlP0rC3g4'
+PACEMAKER_SQL_PW_FILE="/var/opt/mssql/secrets/passwd"

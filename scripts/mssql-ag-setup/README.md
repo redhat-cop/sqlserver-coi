@@ -32,13 +32,16 @@ ag-keygen.sh     - generates keys that secure the SQL Server AG data
 
 ag-setup.sh      - sets up the SQL Server Availability Group
 
-fence-setup.sh   - this script is reserved for fencing configuration.  
+pcs-setup.sh     - configures Pacemaker for the cluster
+
+fence-setup.sh   - reserved for Pacemaker fencing configuration.  
                    By default we just use watchdog timers, but for 
-                   installations that are either not bare metal or using 
+                   installations that are not bare metal or using 
                    Red Hat Virtualization, you'll want to modify 
                    this  script to configure a fencing agent.
 
-pcs-setup.sh     - this script configures Pacemaker for the cluster
+ag-add.sh        - adds one or more of a particular type of server
+                   to the existing cluster documented in params.sh
 
 
 
