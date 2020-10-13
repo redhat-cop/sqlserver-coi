@@ -2,7 +2,6 @@
 
 # This file contains the parameters used by all of the other scripts
 
-
 # Debug mode.  If set to 1, then unsuccesful sql commands are saved
 # to /tmp.  We do not save them there by default since they can
 # contain passwords.
@@ -65,5 +64,33 @@ PRIVATE_KEY_PASSWORD='w22yQeEXW9cjvr2hRig'
 # Name for certificates
 DBM_CERTIFICATE_NAME="dbm_certificate"
 
+# Password for Pacemaker account in SQL Server
 PACEMAKER_SQL_PW='f9YHkyxHb8vlP0rC3g4'
 PACEMAKER_SQL_PW_FILE="/var/opt/mssql/secrets/passwd"
+
+# Type of fencing to use.  Current supported types are baremetal or azure.  Note that baremetal fencing
+# also supports Red Hat Virtualization.
+FENCING_TYPE="baremetal"
+# Parameters used if FENCING_TYPE is Azure
+# See: https://docs.microsoft.com/en-us/azure/azure-sql/virtual-machines/linux/rhel-high-availability-stonith-tutorial
+
+# Application ID value from your application registration in Azure.
+AZURE_APPLICATION_ID=""
+
+# The Service Principal Password with the value from the client secret in Azure.
+AZURE_SP_PASSWORD="" 
+
+# The resource group from your subscription
+AZURE_RESOURCE_GROUP_NAME="" 
+
+# The tenantID from your Azure Subscription.
+AZURE_TENANT_ID=""
+
+# The subscriptionId from your Azure Subscription.
+AZURE_SUBSCRIPTION_ID=""
+
+# The port number for
+AZURE_LB_PROBE_PORT=59999
+
+# Azure load balancer IP address
+AZURE_LB_IP="10.0.0.7"

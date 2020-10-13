@@ -62,17 +62,52 @@ echo "Create the availability group resource"
 ssh root@$PRIMARY_SERVER pcs resource create ag_cluster ocf:mssql:ag ag_name=$AG_NAME meta failure-timeout=60s promotable notify=true
 
 sleep 3
-echo "Create  the floating virtual IP address"
+echo "Create the floating virtual IP address"
 # Set up a floating virtual IP address for the SQL Server AG
 ssh root@$PRIMARY_SERVER pcs resource create virtualip ocf:heartbeat:IPaddr2 ip=$VIRTUAL_IP
 
 sleep 3
+if [ $FENCING_TYPE = "azure" ]
+then
+   echo "Create the Azure load balancer resource"
+   ssh root@PRIMARY_SERVER pcs resource create azure_load_balancer azure-lb port=$AZURE_LB_PROBE_PORT
+   ssh root@PRIMARY_SERVER pcs resource group add virtualip_group azure_load_balancer virtualip
+fi
+
+sleep 3
 echo "Add a colocation constraint"
 # Add a colocation constraint
-ssh root@$PRIMARY_SERVER pcs constraint colocation add virtualip with master ag_cluster-clone INFINITY with-rsc-role=Master
+if [ $FENCING_TYPE = "baremetal" ]
+then
+   ssh root@$PRIMARY_SERVER pcs constraint colocation add virtualip with master ag_cluster-clone INFINITY \
+	   with-rsc-role=Master
+elif [ $FENCING_TYPE = "azure" ]
+then
+   ssh root@$PRIMARY_SERVER pcs constraint colocation add azure_load_balancer ag_cluster-clone \
+	   INFINITY with-rsc-role=Master
+else
+   echo "unknown cluster type" >&2
+   exit 1
+fi
 
 sleep 3
 echo "Add an ordering constraint"
 # Add an ordering constraint
-ssh root@$PRIMARY_SERVER pcs constraint order promote ag_cluster-clone then start virtualip
+if [ $FENCING_TYPE = "baremetal" ]
+then
+    ssh root@$PRIMARY_SERVER pcs constraint order promote ag_cluster-clone then start virtualip
+elif [ $FENCING_TYPE = "azure" ]
+then
+    ssh root@$PRIMARY_SERVER pcs constraint order promote ag_cluster-master then start azure_load_balancer
+    cat<<__EOF>/tmp/sqlcmd-pcs-setup3.$PRIMARY_SERVER
+ALTER AVAILABILITY GROUP [ag1] ADD LISTENER 'ag1-listener' (
+        WITH IP(($AZURE_LB_IP ,'255.255.255.0')),PORT = 1433);
+GO
+__EOF
+
+    runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-pcs-setup3.$PRIMARY_SERVER"
+else
+   echo "unknown cluster type" >&2
+   exit 1
+fi
 
