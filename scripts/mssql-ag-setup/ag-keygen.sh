@@ -1,9 +1,7 @@
 #!/bin/sh
 
-# Bring in the configuration parameters
 source ./params.sh
-
-# Load generic functions
+source ./initvars.sh
 source ./functions.sh
 
 # Set up the master certificate
@@ -27,11 +25,19 @@ runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-ag-keygen1.$PRIMARY_SERVER"
 sleep 3
 echo "Copying certificates to sync, async, and configuration-only servers"
 # Copy the certificates to the sync, async, and configuration-only servers
+#
+# First cache the certs locally
+mkdir ./dbm_cert_cache
+runscpcmd "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" "root@$PRIMARY_SERVER:/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.*" ./dbm_cert_cache 
+
 for server in $SYNC_SERVERS $ASYNC_SERVERS $CONFIG_ONLY_SERVERS
 do
-    scp root@$PRIMARY_SERVER:/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.* root@$server:/var/opt/mssql/data/
-    ssh root@$server chown mssql:mssql /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.*
+    runscpcmd "${ALL_SERVERS_PASS[$server]}" "./dbm_cert_cache/$DBM_CERTIFICATE_NAME.*" root@$server:/var/opt/mssql/data/
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" chown mssql:mssql "/var/opt/mssql/data/$DBM_CERTIFICATE_NAME.*"
 done # for server in $SYNC_SERVERS $ASYNC_SERVERS $CONFIG_ONLY_SERVERS
+
+# Clear the dbm_cert_cache
+rm -rf dbm_cert_cache
 
 sleep 3
 echo "Creating certificates to sync, async, and configuration-only servers"

@@ -1,11 +1,13 @@
 #!/bin/sh
 
 # ag-sw-add.sh -   installs the additional software that will be needed for
-#                  HA, you can skip this if you already have the software 
-#                  installed
+#                  HA on new servers for an existing cluster. You can skip 
+#                  this if you already have the software installed
 
 # Bring in the configuration parameters
 source ./params.sh
+source ./initvars.sh
+source ./functions.sh
 
 if [ $# -gt 1 ]
 then
@@ -23,9 +25,9 @@ echo "Install pacemaker"
 
 for server in $NEW_SERVERS
 do
-    ssh root@$server subscription-manager repos --enable=rhel-8-for-x86_64-highavailability-rpms
-    ssh root@$server  "firewall-cmd --permanent --add-service=high-availability; firewall-cmd --reload"
-    ssh root@$server yum install -y pacemaker pcs fence-agents-all resource-agents
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" subscription-manager repos --enable=rhel-8-for-x86_64-highavailability-rpms
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" "firewall-cmd --permanent --add-service=high-availability; firewall-cmd --reload"
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" yum install -y pacemaker pcs fence-agents-all resource-agents
 done # for server in $NEW_SERVERS
 
 # Install the SQL Server resource agent on all nodes
@@ -33,5 +35,5 @@ sleep 3
 echo "Install the SQL Server resource agent on all nodes"
 for server in $NEW_SERVERS
 do
-    ssh root@$server yum install -y mssql-server-ha
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" yum install -y mssql-server-ha
 done # for server in $NEW_SERVERS

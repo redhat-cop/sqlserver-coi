@@ -5,15 +5,24 @@
 
 # Bring in the configuration parameters
 source ./params.sh
+source ./initvars.sh
 source ./functions.sh
+
+# Verify that we have a cluster in place to support RHEL HA Add-On
+if [ $CLUSTER_TYPE != "EXTERNAL" ]
+then
+    echo "Cluster type is $CLUSTER_TYPE" >&2
+    echo "Skipping RHEL HA Add-on configuration"
+    exit 0
+fi
 
 echo "Setting password for hacluster account and enabling RHEL HA Add-On"
 for server in $ALL_SERVERS
 do
-    ssh root@$server passwd --stdin hacluster<<__EOF
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" passwd --stdin hacluster<<__EOF
 $HACLUSTER_PW
 __EOF
-    ssh root@$server "systemctl enable pcsd;sudo systemctl start pcsd; sudo systemctl enable pacemaker"
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" "systemctl enable pcsd;sudo systemctl start pcsd; sudo systemctl enable pacemaker"
 done # for server in $ALL_SERVERS
 
 echo "Create a SQL Server login for Pacemaker on all servers"
@@ -31,7 +40,7 @@ __EOF
 
     runsqlcmd $server "/tmp/sqlcmd-pcs-setup1.$server"
 
-    ssh root@$server "printf \"pacemakerLogin\\n$PACEMAKER_SQL_PW\\n\" > $PACEMAKER_SQL_PW_FILE; chown root:root $PACEMAKER_SQL_PW_FILE; chmod 400 $PACEMAKER_SQL_PW_FILE"
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" "printf \"pacemakerLogin\\n$PACEMAKER_SQL_PW\\n\" > $PACEMAKER_SQL_PW_FILE; chown root:root $PACEMAKER_SQL_PW_FILE; chmod 400 $PACEMAKER_SQL_PW_FILE"
 
     cat<<__EOF>/tmp/sqlcmd-pcs-setup2.$server
 GRANT ALTER, CONTROL, VIEW DEFINITION ON AVAILABILITY GROUP::$AG_NAME TO pacemakerLogin
@@ -45,33 +54,34 @@ done # for server in $ALL_SERVERS
 sleep 3
 echo "Setup the pacemaker cluster"
 # Now setup and start the cluster
-ssh root@$PRIMARY_SERVER pcs host auth -u hacluster -p $HACLUSTER_PW $ALL_SERVERS 
-ssh root@$PRIMARY_SERVER pcs cluster setup $AG_NAME $ALL_SERVERS
-ssh root@$PRIMARY_SERVER "pcs cluster start --all; sudo pcs cluster enable --all"
-ssh root@$PRIMARY_SERVER pcs cluster auth -u hacluster -p $HACLUSTER_PW
+server=$PRIMARY_SERVER
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs host auth -u hacluster -p "$HACLUSTER_PW" $ALL_SERVERS 
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster setup $AG_NAME $ALL_SERVERS
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" "pcs cluster start --all; sudo pcs cluster enable --all"
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster auth -u hacluster -p "$HACLUSTER_PW"
 
 sleep 3
 echo "Set the recheck interval of pacemaker to 2 minutes"
 # Set the recheck interval for pacemaker to 2min (MS recommended)
-ssh root@$PRIMARY_SERVER pcs property set cluster-recheck-interval=2min
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs property set cluster-recheck-interval=2min
 
 sleep 3
 echo "Create the availability group resource"
 
 # Create the availability group resource
-ssh root@$PRIMARY_SERVER pcs resource create ag_cluster ocf:mssql:ag ag_name=$AG_NAME meta failure-timeout=60s promotable notify=true
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create ag_cluster ocf:mssql:ag ag_name=$AG_NAME meta failure-timeout=60s promotable notify=true
 
 sleep 3
 echo "Create the floating virtual IP address"
 # Set up a floating virtual IP address for the SQL Server AG
-ssh root@$PRIMARY_SERVER pcs resource create virtualip ocf:heartbeat:IPaddr2 ip=$VIRTUAL_IP
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create virtualip ocf:heartbeat:IPaddr2 ip=$VIRTUAL_IP
 
 sleep 3
 if [ $FENCING_TYPE = "azure" ]
 then
-   echo "Create the Azure load balancer resource"
-   ssh root@PRIMARY_SERVER pcs resource create azure_load_balancer azure-lb port=$AZURE_LB_PROBE_PORT
-   ssh root@PRIMARY_SERVER pcs resource group add virtualip_group azure_load_balancer virtualip
+    echo "Create the Azure load balancer resource"
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create azure_load_balancer azure-lb port=$AZURE_LB_PROBE_PORT
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource group add virtualip_group azure_load_balancer virtualip
 fi
 
 sleep 3
@@ -79,11 +89,11 @@ echo "Add a colocation constraint"
 # Add a colocation constraint
 if [ $FENCING_TYPE = "baremetal" ]
 then
-   ssh root@$PRIMARY_SERVER pcs constraint colocation add virtualip with master ag_cluster-clone INFINITY \
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint colocation add virtualip with master ag_cluster-clone INFINITY \
 	   with-rsc-role=Master
 elif [ $FENCING_TYPE = "azure" ]
 then
-   ssh root@$PRIMARY_SERVER pcs constraint colocation add azure_load_balancer ag_cluster-clone \
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint colocation add azure_load_balancer ag_cluster-clone \
 	   INFINITY with-rsc-role=Master
 else
    echo "unknown cluster type" >&2
@@ -95,10 +105,10 @@ echo "Add an ordering constraint"
 # Add an ordering constraint
 if [ $FENCING_TYPE = "baremetal" ]
 then
-    ssh root@$PRIMARY_SERVER pcs constraint order promote ag_cluster-clone then start virtualip
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint order promote ag_cluster-clone then start virtualip
 elif [ $FENCING_TYPE = "azure" ]
 then
-    ssh root@$PRIMARY_SERVER pcs constraint order promote ag_cluster-master then start azure_load_balancer
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint order promote ag_cluster-master then start azure_load_balancer
     cat<<__EOF>/tmp/sqlcmd-pcs-setup3.$PRIMARY_SERVER
 ALTER AVAILABILITY GROUP [ag1] ADD LISTENER 'ag1-listener' (
         WITH IP(($AZURE_LB_IP ,'255.255.255.0')),PORT = 1433);

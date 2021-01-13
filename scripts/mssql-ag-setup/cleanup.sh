@@ -1,5 +1,6 @@
 #!/bin/sh
 source ./params.sh
+source ./initvars.sh
 source ./functions.sh
 
 # Cleanup the configuration for demo purposes
@@ -12,8 +13,11 @@ __EOF
 
 runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-cleanup1.$PRIMARY_SERVER"
 
-echo "Destroying the Pacemaker cluster"
-pcs cluster destroy --all
+if [ $CLUSTER_TYPE = "EXTERNAL" ]
+then
+    echo "Destroying the Pacemaker cluster"
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster destroy --all
+fi
 
 echo "Removing any config-only server configuration"
 for server in $CONFIG_ONLY_SERVERS
@@ -32,7 +36,7 @@ GO
 __EOF
         runsqlcmd $server "/tmp/sqlcmd-cleanup2.$server"
 
-	ssh root@$server  rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
+        runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
 
 done
 
@@ -58,7 +62,7 @@ GO
 __EOF
         runsqlcmd $server "/tmp/sqlcmd-cleanup3.$server"
 
-	ssh root@$server  rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
+        runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
 
 done
 
@@ -80,7 +84,7 @@ GO
 __EOF
 runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-cleanup4.$PRIMARY_SERVER"
 
-ssh root@$PRIMARY_SERVER  rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
+runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
 
 echo "Restoring the database from backup to the primary"
 
@@ -88,6 +92,5 @@ cat <<__EOF>/tmp/sqlcmd-cleanup3.$PRIMARY_SERVER
 RESTORE DATABASE [$DB_NAME] FROM DISK="/var/opt/mssql/data/$DB_NAME.bak";
 GO
 __EOF
-
 runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-cleanup3.$PRIMARY_SERVER"
 
