@@ -1,6 +1,5 @@
 #!/bin/sh
 source ./params.sh
-source ./initvars.sh
 source ./functions.sh
 
 # Cleanup the configuration for demo purposes
@@ -13,11 +12,8 @@ __EOF
 
 runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-cleanup1.$PRIMARY_SERVER"
 
-if [ $CLUSTER_TYPE = "EXTERNAL" ]
-then
-    echo "Destroying the Pacemaker cluster"
-    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster destroy --all
-fi
+echo "Destroying the Pacemaker cluster"
+pcs cluster destroy --all
 
 echo "Removing any config-only server configuration"
 for server in $CONFIG_ONLY_SERVERS
@@ -36,13 +32,13 @@ GO
 __EOF
         runsqlcmd $server "/tmp/sqlcmd-cleanup2.$server"
 
-        runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
+	ssh root@$server  rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
 
 done
 
 
 echo "Removing any replica server configurations"
-for server in $SYNC_SERVERS $ASYNC_SERVERS
+for server in $SECONDARY_SERVERS $TERTIARY_SERVERS
 do
 	cat<<__EOF>/tmp/sqlcmd-cleanup3.$server
 DROP LOGIN [pacemakerLogin];
@@ -62,7 +58,7 @@ GO
 __EOF
         runsqlcmd $server "/tmp/sqlcmd-cleanup3.$server"
 
-        runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
+	ssh root@$server  rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
 
 done
 
@@ -84,7 +80,7 @@ GO
 __EOF
 runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-cleanup4.$PRIMARY_SERVER"
 
-runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
+ssh root@$PRIMARY_SERVER  rm /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.cer /var/opt/mssql/data/$DBM_CERTIFICATE_NAME.pvk
 
 echo "Restoring the database from backup to the primary"
 
@@ -92,5 +88,6 @@ cat <<__EOF>/tmp/sqlcmd-cleanup3.$PRIMARY_SERVER
 RESTORE DATABASE [$DB_NAME] FROM DISK="/var/opt/mssql/data/$DB_NAME.bak";
 GO
 __EOF
+
 runsqlcmd $PRIMARY_SERVER "/tmp/sqlcmd-cleanup3.$PRIMARY_SERVER"
 
