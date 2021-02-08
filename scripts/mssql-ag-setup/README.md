@@ -46,9 +46,10 @@ pcs-setup.sh     - configures Red Hat HA for the cluster
 
 fence-setup.sh   - reserved for Red Hat HA fencing configuration.  
                    By default we just use watchdog timers, but for 
-                   installations that are not bare metal or using 
-                   Red Hat Virtualization, you'll want to modify 
-                   this  script to configure a fencing agent.
+                   installations that are not bare metal, using 
+                   Red Hat Virtualization, using Azure, or VMware,
+                   you'll want to modify this script to configure 
+                   a fencing agent.
 
 ag-add.sh        - adds one or more of a particular type of server
                    to the existing cluster documented in params.sh

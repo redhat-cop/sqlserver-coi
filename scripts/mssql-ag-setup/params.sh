@@ -62,11 +62,12 @@ DBM_CERTIFICATE_NAME="dbm_certificate"
 PACEMAKER_SQL_PW='f9YHkyxHb8vlP0rC3g4'
 PACEMAKER_SQL_PW_FILE="/var/opt/mssql/secrets/passwd"
 
-# Type of fencing to use.  Current supported types are baremetal or azure.  Note that baremetal fencing
+# Type of fencing to use.  Current supported types are baremetal azure or 
+# vmware.  Note that baremetal fencing
 # also supports Red Hat Virtualization.
 FENCING_TYPE="baremetal"
 
-# Parameters used if FENCING_TYPE is Azure
+# Parameters used if FENCING_TYPE is azure
 # See: https://docs.microsoft.com/en-us/azure/azure-sql/virtual-machines/linux/rhel-high-availability-stonith-tutorial
 
 # Application ID value from your application registration in Azure.
@@ -89,6 +90,17 @@ AZURE_LB_PROBE_PORT=59999
 
 # Azure load balancer IP address
 AZURE_LB_IP="10.0.0.7"
+
+# Parameters used if FENCING_TYPE is vmware
+# Map the HA Add-on hostnames to VM names of the cluster nodes
+VMWARE_HOST_MAPPINGS="sql1.ag1:sql1-vm;sql2.ag1:sql2-vm;sql3.ag1:sql3-vm" 
+
+# ESXi/vCenter IP address
+VMWARE_IP_ADDRESS="10.0.0.7"
+
+# ESXi login and password
+VMWARE_LOGIN="vmsqladmin"
+VMWARE_PASSWORD="StrongPassw0rdofM9"
 
 # Here we specify the type of cluster to use.
 CLUSTER_TYPE="EXTERNAL"

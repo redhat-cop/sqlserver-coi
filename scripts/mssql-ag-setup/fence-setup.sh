@@ -22,6 +22,13 @@ then
     echo "Configuring fencing for a baremetal or Red Hat Virtualization cluster"
     runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" pcs property set stonith-watchdog-timeout=10s
     runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" pcs stonith sbd enable
+
+elif [ $FENCING_TYPE = "vmware" ]
+then
+   echo "Configuring fencing for VMware/ESXi"
+   runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" pcs stonith create vmfence fence_vmware_soap pcmk_host_map="$VMWARE_HOSTMAP" ipaddr="$VMWARE_IP_ADDRESS" ssl=1 login="$VMWARE_LOGIN" passwd="$VMWARE_PASSWORD"
+    runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" pcs property set stonith-enabled=true
+
 elif [ $FENCING_TYPE = "azure" ]
 then
     echo "Configuring fencing for Azure VM"  
