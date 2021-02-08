@@ -31,7 +31,7 @@ runsshcmd()
    shift 2
    cmd=$@
 
-   if [ $SSH_PASS_PROMPT = "" ]
+   if [ "$SSH_PASS_PROMPT" = "" ]
    then
        ssh root@$server $cmd
    else
