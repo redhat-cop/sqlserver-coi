@@ -45,11 +45,11 @@ ag-setup.sh      - sets up the SQL Server Availability Group
 pcs-setup.sh     - configures Red Hat HA for the cluster
 
 fence-setup.sh   - reserved for Red Hat HA fencing configuration.  
-                   By default we just use watchdog timers, but for 
-                   installations that are not bare metal, using 
-                   Red Hat Virtualization, using Azure, or VMware,
-                   you'll want to modify this script to configure 
-                   a fencing agent.
+                   By default we just use watchdog timers which is 
+                   suitable forinstallations that are on bare metal or using 
+                   Red Hat Virtualization. We also provide fencing setup for Azure 
+                   and VMware,  If you want to use either of these, you'll want to 
+                   modify the params.sh script to configure a different fencing agent.
 
 ag-add.sh        - adds one or more of a particular type of server
                    to the existing cluster documented in params.sh
