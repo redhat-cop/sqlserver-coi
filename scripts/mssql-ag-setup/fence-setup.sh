@@ -15,7 +15,7 @@ then
     exit 0
 fi
 
-echo "Turn on fencing. A watchdog timer is all you need for barmetal/KVM"
+echo "Turn on fencing"
 # Enable fencing, on baremetal or KVM we just use a watchdog timer
 if [ $FENCING_TYPE = "baremetal" ]
 then
@@ -26,7 +26,7 @@ then
 elif [ $FENCING_TYPE = "vmware" ]
 then
    echo "Configuring fencing for VMware/ESXi"
-   runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" pcs stonith create vmfence fence_vmware_soap pcmk_host_map="$VMWARE_HOSTMAP" ipaddr="$VMWARE_IP_ADDRESS" ssl=1 login="$VMWARE_LOGIN" passwd="$VMWARE_PASSWORD"
+   runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" pcs stonith create vmfence fence_vmware_soap ip="$VMWARE_IP_ADDRESS" ssl_insecure=1 username="$VMWARE_LOGIN" passwd="$VMWARE_PASSWORD" 
     runsshcmd "$PRIMARY_SERVER" "${ALL_SERVERS_PASS[$PRIMARY_SERVER]}" pcs property set stonith-enabled=true
 
 elif [ $FENCING_TYPE = "azure" ]

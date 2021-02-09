@@ -42,7 +42,7 @@ SQL_PORT=1433
 AG_NAME="ag1"
 
 # The database name and the path for a backup
-DB_NAME=AdventureWorksLT2019
+DB_NAME=ExampleDB
 DB_BKUP_PATH=/var/opt/mssql/data/$DB_NAME.bak
 
 # A password for the hacluster user added by pacemaker 
@@ -92,15 +92,13 @@ AZURE_LB_PROBE_PORT=59999
 AZURE_LB_IP="10.0.0.7"
 
 # Parameters used if FENCING_TYPE is vmware
-# Map the HA Add-on hostnames to VM names of the cluster nodes
-VMWARE_HOST_MAPPINGS="sql1.ag1:sql1-vm;sql2.ag1:sql2-vm;sql3.ag1:sql3-vm" 
 
 # ESXi/vCenter IP address
-VMWARE_IP_ADDRESS="10.0.0.7"
+VMWARE_IP_ADDRESS="vcenter.mydomain"
 
 # ESXi login and password
-VMWARE_LOGIN="vmsqladmin"
-VMWARE_PASSWORD="StrongPassw0rdofM9"
+VMWARE_LOGIN="vmsoap@VSPHERE.LOCAL"
+VMWARE_PASSWORD="M15ecurePasswd!"
 
 # Here we specify the type of cluster to use.
 CLUSTER_TYPE="EXTERNAL"
@@ -123,7 +121,7 @@ CLUSTER_TYPE="EXTERNAL"
 # There can be at most 9 servers in a writeable SQL Server Availability Group.
 #
 # The default example sets the hostname but no password. 
-declare -A PRIMARY_SERVER_PASS=(["sql1.ag1"]="")
+declare -A PRIMARY_SERVER_PASS=(["sql1.mydomain"]="")
 
 # You can set the host name and password as follows:
 #
@@ -140,7 +138,7 @@ declare -A PRIMARY_SERVER_PASS=(["sql1.ag1"]="")
 # By default, we'll configure servers sql2.ag1 and sql3.ag1 but leave 
 # the passords unset since we're relying on ssh key's only for security.
 #
-declare -A SYNC_SERVERS_PASS=(["sql2.ag1"]="" ["sql3.ag1"]="")
+declare -A SYNC_SERVERS_PASS=(["sql2.mydomain"]="" ["sql3.mydomain"]="")
 
 #
 # You can assign passwords as in the following example: 

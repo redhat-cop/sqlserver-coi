@@ -49,7 +49,7 @@ runscpcmd()
    src=$2
    dest=$3
 
-   if [ $SSH_PASS_PROMPT = "" ]
+   if [ "$SSH_PASS_PROMPT" = "" ]
    then
        scp $src $dest
    else

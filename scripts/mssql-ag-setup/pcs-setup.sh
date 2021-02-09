@@ -87,7 +87,7 @@ fi
 sleep 3
 echo "Add a colocation constraint"
 # Add a colocation constraint
-if [ $FENCING_TYPE = "baremetal" ]
+if [ $FENCING_TYPE = "baremetal" -o $FENCING_TYPE = "vmware" ]
 then
     runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint colocation add virtualip with master ag_cluster-clone INFINITY \
 	   with-rsc-role=Master
@@ -103,7 +103,7 @@ fi
 sleep 3
 echo "Add an ordering constraint"
 # Add an ordering constraint
-if [ $FENCING_TYPE = "baremetal" ]
+if [ $FENCING_TYPE = "baremetal" -o $FENCING_TYPE = "vmware" ]
 then
     runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint order promote ag_cluster-clone then start virtualip
 elif [ $FENCING_TYPE = "azure" ]
