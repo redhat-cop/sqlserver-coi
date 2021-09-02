@@ -55,8 +55,8 @@ sleep 3
 echo "Setup the pacemaker cluster"
 # Now setup and start the cluster
 server=$PRIMARY_SERVER
-runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs host auth -u hacluster -p "$HACLUSTER_PW" $ALL_SERVERS 
-runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster setup $AG_NAME $ALL_SERVERS
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs host auth -u hacluster -p "$HACLUSTER_PW" $ALL_SERVERS_NB
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster setup $AG_NAME $ALL_SERVERS_NB
 runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" "pcs cluster start --all; sudo pcs cluster enable --all"
 runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster auth -u hacluster -p "$HACLUSTER_PW"
 
@@ -64,17 +64,18 @@ sleep 3
 echo "Set the recheck interval of pacemaker to 2 minutes"
 # Set the recheck interval for pacemaker to 2min (MS recommended)
 runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs property set cluster-recheck-interval=2min
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs property set start-failure-is-fatal=true
 
 sleep 3
 echo "Create the availability group resource"
 
 # Create the availability group resource
-runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create ag_cluster ocf:mssql:ag ag_name=$AG_NAME meta failure-timeout=60s promotable notify=true
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create ag_cluster ocf:mssql:ag ag_name=$AG_NAME meta failure-timeout=80s promotable notify=true
 
 sleep 3
 echo "Create the floating virtual IP address"
 # Set up a floating virtual IP address for the SQL Server AG
-runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create virtualip ocf:heartbeat:IPaddr2 ip=$VIRTUAL_IP
+runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create virtualip ocf:heartbeat:IPaddr2 ip=$VIRTUAL_IP cidr_netmask=24 op monitor interval=30s
 
 sleep 3
 if [ $FENCING_TYPE = "azure" ]
@@ -89,10 +90,12 @@ echo "Add a colocation constraint"
 # Add a colocation constraint
 if [ $FENCING_TYPE = "baremetal" -o $FENCING_TYPE = "vmware" ]
 then
+    echo "Baremental or VMWare colocation wth virtualip"
     runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint colocation add virtualip with master ag_cluster-clone INFINITY \
 	   with-rsc-role=Master
 elif [ $FENCING_TYPE = "azure" ]
 then
+    echo "Azure colocation constraint with azure_load_balancer"
     runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint colocation add azure_load_balancer ag_cluster-clone \
 	   INFINITY with-rsc-role=Master
 else
@@ -105,9 +108,11 @@ echo "Add an ordering constraint"
 # Add an ordering constraint
 if [ $FENCING_TYPE = "baremetal" -o $FENCING_TYPE = "vmware" ]
 then
+    echo "With Baremetal or VMware start ag_cluster_clone then virtualip"
     runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint order promote ag_cluster-clone then start virtualip
 elif [ $FENCING_TYPE = "azure" ]
 then
+    echo "With Baremetal or VMware start ag_cluster_clone then azure_load_balancer and add a listner to the AG"
     runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint order promote ag_cluster-master then start azure_load_balancer
     cat<<__EOF>/tmp/sqlcmd-pcs-setup3.$PRIMARY_SERVER
 ALTER AVAILABILITY GROUP [ag1] ADD LISTENER 'ag1-listener' (

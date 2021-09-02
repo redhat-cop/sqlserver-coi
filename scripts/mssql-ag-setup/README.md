@@ -7,6 +7,13 @@ This set of tools is intended to simplify the setup of SQL Server on Red Hat
 Enterprise Linux.  Prior to running any of these shell scripts, you should 
 modify the configuration variables in the params.sh file.
 
+Beginnning with SQL Server 2019 CU11, there is a bug which causes Availability 
+Groups to fail if the mssql resource agent is configured to use the fully 
+qualified host name (eg. host1.domain) instead of the system name (eg. host). 
+The latest implementation of these scripts uses this workaround.  Make sure 
+your DNS (or host file) is configured to use system names as well as host 
+names in mappings to IP addresses.
+
 I used to recommend that you temporarily setup passwordless ssh root host 
 equvalence between the cluster nodes using ssh-keygen and ssh-copy-id but 
 the tool now supports specifying a root password for each host in the params.sh
@@ -45,11 +52,11 @@ ag-setup.sh      - sets up the SQL Server Availability Group
 pcs-setup.sh     - configures Red Hat HA for the cluster
 
 fence-setup.sh   - reserved for Red Hat HA fencing configuration.  
-                   By default we just use watchdog timers which is 
-                   suitable forinstallations that are on bare metal or using 
-                   Red Hat Virtualization. We also provide fencing setup for Azure 
-                   and VMware,  If you want to use either of these, you'll want to 
-                   modify the params.sh script to configure a different fencing agent.
+                   By default we just use watchdog timers, but for 
+                   installations that are not bare metal, using 
+                   Red Hat Virtualization, using Azure, or VMware,
+                   you'll want to modify this script to configure 
+                   a fencing agent.
 
 ag-add.sh        - adds one or more of a particular type of server
                    to the existing cluster documented in params.sh

@@ -28,6 +28,13 @@ done
 
 ALL_SERVERS=${!ALL_SERVERS_PASS[@]}
 
+ALL_SERVERS_NB=""
+
+for server in $ALL_SERVERS
+do
+    ALL_SERVERS_NB+=`echo $server | awk -F . '{ print $1 }'`" "
+done
+
 if [ $CLUSTER_TYPE = "EXTERNAL" ]
 then 
     FAILOVER_MODE="EXTERNAL"
