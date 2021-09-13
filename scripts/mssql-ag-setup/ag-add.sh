@@ -33,8 +33,14 @@ do
     shift 1
 done
 
-# List of server names
+# List of fully qualified host names
 NEW_SERVERS=${!NEW_SERVERS_PASS[@]}
+
+# List of system names
+for server in $NEW_SERVERS
+do
+    NEW_SERVERS_NB+=`echo $server | awk -F . '{ print $1 }'`" "
+done
 
 case $type in
 
@@ -233,18 +239,36 @@ fi
 
 if [ $type != "config-only" ]
 then
-    for server in $NEW_SERVERS
-    do
-        cat<<__EOF >/tmp/sqlcmd-ag-add5.$server
+    # Use the new lease validity option for RHEL 8.3 and later.
+    # Works with resource agent on-fail-'demote' option 
+    if check_version 8.3
+    then
+        for server in $NEW_SERVERS
+        do
+            cat<<__EOF >/tmp/sqlcmd-ag-add5.$server
+ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = $CLUSTER_TYPE, WRITE_LEASE_VALIDITY=20);
+ALTER AVAILABILITY GROUP [$AG_NAME] GRANT CREATE ANY DATABASE;
+GO
+__EOF
+
+            echo "Joining $server to $AG_NAME"
+            runsqlcmd $server "/tmp/sqlcmd-ag-add5.$server"
+
+        done #for server in non config-only $NEW_SERVERS
+    else
+        for server in $NEW_SERVERS
+        do
+            cat<<__EOF >/tmp/sqlcmd-ag-add5.$server
 ALTER AVAILABILITY GROUP [$AG_NAME] JOIN WITH (CLUSTER_TYPE = $CLUSTER_TYPE);
 ALTER AVAILABILITY GROUP [$AG_NAME] GRANT CREATE ANY DATABASE;
 GO
 __EOF
 
-        echo "Joining $server to $AG_NAME"
-        runsqlcmd $server "/tmp/sqlcmd-ag-add5.$server"
+            echo "Joining $server to $AG_NAME"
+            runsqlcmd $server "/tmp/sqlcmd-ag-add5.$server"
 
-    done #for server in non config-only $NEW_SERVERS
+        done #for server in non config-only $NEW_SERVERS
+    fi
 
 else # the config-only case
 

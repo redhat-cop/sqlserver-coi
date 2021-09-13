@@ -7,6 +7,12 @@ This set of tools is intended to simplify the setup of SQL Server on Red Hat
 Enterprise Linux.  Prior to running any of these shell scripts, you should 
 modify the configuration variables in the params.sh file.
 
+Beginning with SQL Server 2019 CU12, SQL Server takes advantage of a new 
+feature  of the Red Hat High Availability Add-on that prevents uncessary
+restarts of servers when SQL Server itself initiates a failover.  This can 
+be extrememly useful for large memory configurations where memory checks 
+on start-up are both important and time consuming.
+
 Beginnning with SQL Server 2019 CU11, there is a bug which causes Availability 
 Groups to fail if the mssql resource agent is configured to use the fully 
 qualified host name (eg. host1.domain) instead of the system name (eg. host). 

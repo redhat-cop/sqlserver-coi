@@ -30,7 +30,7 @@ SSH_PASS_PROMPT=""
 
 # SQL Server administrative login and password
 SQL_ADMIN="sa"
-SQL_PASS='ftFqn58F?'
+SQL_PASS='RedHat123'
 
 # The port the servers listen on for replication
 LISTENER_PORT=5022
@@ -42,11 +42,11 @@ SQL_PORT=1433
 AG_NAME="ag1"
 
 # The database name and the path for a backup
-DB_NAME=ExampleDB
+DB_NAME=AdventureWorksLT2019
 DB_BKUP_PATH=/var/opt/mssql/data/$DB_NAME.bak
 
 # A password for the hacluster user added by pacemaker 
-HACLUSTER_PW='aMhc:8Di3'
+HACLUSTER_PW='RedHat123'
 
 # A floating virtual IP address for accessing the master SQL Server node
 VIRTUAL_IP=192.168.200.254
@@ -62,9 +62,9 @@ DBM_CERTIFICATE_NAME="dbm_certificate"
 PACEMAKER_SQL_PW='f9YHkyxHb8vlP0rC3g4'
 PACEMAKER_SQL_PW_FILE="/var/opt/mssql/secrets/passwd"
 
-# Type of fencing to use.  Current supported types are baremetal azure or 
-# vmware.  Note that baremetal fencing
-# also supports Red Hat Virtualization.
+# Type of fencing to use.  Current supported types are baremetal, azure, or 
+# vmware.  Note that baremetal fencing also supports Red Hat Virtualization
+# provided you create watchdog devices for your images
 FENCING_TYPE="baremetal"
 
 # Parameters used if FENCING_TYPE is azure
@@ -96,7 +96,8 @@ AZURE_LB_IP="10.0.0.7"
 # ESXi/vCenter IP address
 VMWARE_IP_ADDRESS="vcenter.mydomain"
 
-# ESXi login and password
+# ESXi login and password  - must have start/stop permissions for the 
+# SQL Server hosts
 VMWARE_LOGIN="vmsoap@VSPHERE.LOCAL"
 VMWARE_PASSWORD="M15ecurePasswd!"
 
@@ -121,7 +122,7 @@ CLUSTER_TYPE="EXTERNAL"
 # There can be at most 9 servers in a writeable SQL Server Availability Group.
 #
 # The default example sets the hostname but no password. 
-declare -A PRIMARY_SERVER_PASS=(["sql1.mydomain"]="")
+declare -A PRIMARY_SERVER_PASS=(["sql1"]="")
 
 # You can set the host name and password as follows:
 #
@@ -138,7 +139,7 @@ declare -A PRIMARY_SERVER_PASS=(["sql1.mydomain"]="")
 # By default, we'll configure servers sql2.ag1 and sql3.ag1 but leave 
 # the passords unset since we're relying on ssh key's only for security.
 #
-declare -A SYNC_SERVERS_PASS=(["sql2.mydomain"]="" ["sql3.mydomain"]="")
+declare -A SYNC_SERVERS_PASS=(["sql2"]="" ["sql3"]="")
 
 #
 # You can assign passwords as in the following example: 
@@ -156,7 +157,7 @@ SYNC_SERVERS=${!SYNC_SERVERS_PASS[@]}
 # Async replicas are manual failover only.
 #
 # example: 
-# declare -A ASYNC_SERVERS_PASS=(["sql4.ag1"]="passwd4" ["sql5.ag1"]="passwd5")
+# declare -A ASYNC_SERVERS_PASS=(["sql4"]="passwd4" ["sql5"]="passwd5")
 #
 declare -A ASYNC_SERVERS_PASS=()
 ASYNC_SERVERS=${!ASYNC_SERVERS_PASS[@]}
@@ -169,7 +170,7 @@ ASYNC_SERVERS=${!ASYNC_SERVERS_PASS[@]}
 # never actually fail over to it.
 #
 # example: 
-# declare -A CONFIG_ONLY_SERVERS=(["sql6.ag1"]="passwd6")
+# declare -A CONFIG_ONLY_SERVERS=(["sql6"]="passwd6")
 #
 declare -A CONFIG_ONLY_SERVERS_PASS=()
 CONFIG_ONLY_SERVERS=${!CONFIG_ONLY_SERVERS_PASS[@]}

@@ -70,7 +70,15 @@ sleep 3
 echo "Create the availability group resource"
 
 # Create the availability group resource
-runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create ag_cluster ocf:mssql:ag ag_name=$AG_NAME meta failure-timeout=80s promotable notify=true
+
+# Use the new lease validity option for RHEL 8.3 and later.
+# Works with resource agent on-fail-'demote' option 
+if check_version 8.3
+then
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create ag_cluster ocf:mssql:ag ag_name=$AG_NAME meta failure-timeout=80s promotable on_fail="demote" notify=true
+else
+    runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs resource create ag_cluster ocf:mssql:ag ag_name=$AG_NAME meta failure-timeout=80s promotable notify=true
+fi
 
 sleep 3
 echo "Create the floating virtual IP address"
@@ -90,7 +98,7 @@ echo "Add a colocation constraint"
 # Add a colocation constraint
 if [ $FENCING_TYPE = "baremetal" -o $FENCING_TYPE = "vmware" ]
 then
-    echo "Baremental or VMWare colocation wth virtualip"
+    echo "Baremetal or VMWare colocation wth virtualip"
     runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs constraint colocation add virtualip with master ag_cluster-clone INFINITY \
 	   with-rsc-role=Master
 elif [ $FENCING_TYPE = "azure" ]

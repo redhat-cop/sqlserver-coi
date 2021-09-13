@@ -56,3 +56,20 @@ runscpcmd()
        echo "$pass" | sshpass -P "$SSH_PASS_PROMPT" scp $src $dest
    fi
 }
+
+
+# Check to see if the current version is >= to the minimum
+check_version()
+{
+    MIN_VERSION=$1
+    CUR_VERSION=`cat /etc/redhat-release | awk '{ print $6 }'`
+    ge=$(echo "$CUR_VERSION >= $MIN_VERSION" | bc -q )
+    # return 1 if true ; O if not
+
+    if [ $ge -eq 1 ]
+    then
+        return 0
+    else
+        return 1
+    fi
+}

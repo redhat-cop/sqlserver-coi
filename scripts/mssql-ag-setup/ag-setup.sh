@@ -78,6 +78,24 @@ echo "Creating the availability group"
 
 SHORT_NAME=`echo $PRIMARY_SERVER | awk -F . '{ print $1 }'`
  
+# Use the new lease validity option for RHEL 8.3 and later.
+# Works with resource agent on-fail-'demote' option 
+if check_version 8.3 && [ $CLUSTER_TYPE = EXTERNAL ]
+then
+cat<<__EOF >/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER
+CREATE AVAILABILITY GROUP [$AG_NAME]
+     WITH (DB_FAILOVER = ON, CLUSTER_TYPE = EXTERNAL, WRITE_LEASE_VALIDITY=20)
+     FOR REPLICA ON
+N'$SHORT_NAME'
+  WITH (
+    ENDPOINT_URL = N'tcp://$PRIMARY_SERVER:$LISTENER_PORT',
+    AVAILABILITY_MODE = SYNCHRONOUS_COMMIT,
+    FAILOVER_MODE = $FAILOVER_MODE,
+    SEEDING_MODE = AUTOMATIC,
+    SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
+__EOF
+
+else
 cat<<__EOF >/tmp/sqlcmd-ag-setup4.$PRIMARY_SERVER
 CREATE AVAILABILITY GROUP [$AG_NAME]
      WITH (DB_FAILOVER = ON, CLUSTER_TYPE = $CLUSTER_TYPE)
@@ -90,6 +108,7 @@ N'$SHORT_NAME'
     SEEDING_MODE = AUTOMATIC,
     SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
 __EOF
+fi # Either cluster type is NONE or release is older than RHEL 8.4
 
 for server in $SYNC_SERVERS
 do

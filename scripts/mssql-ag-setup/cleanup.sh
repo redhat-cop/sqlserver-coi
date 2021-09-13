@@ -25,7 +25,7 @@ do
 	cat<<__EOF>/tmp/sqlcmd-cleanup2.$server
 DROP LOGIN [pacemakerLogin];
 GO
-DROP AVAILABILITY GROUP [$AG_NAME];
+DROP AVAILABILITY GROUP $AG_NAME;
 GO
 DROP ENDPOINT [Hadr_endpoint];
 GO
