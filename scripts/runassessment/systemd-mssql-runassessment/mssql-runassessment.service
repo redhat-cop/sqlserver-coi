@@ -1,0 +1,15 @@
+[Unit]
+Description=Microsoft SQL Server Assessment
+After=mssql-server.service
+
+[Service]
+Type=simple
+User=mssql
+Group=mssql
+ExecStart=/usr/bin/pwsh -File /opt/mssql/bin/runassessment.ps1
+Restart=no
+WatchdogSec=600
+CPUQuota=30%
+MemoryLimit=2G
+TasksMax=100
+BlockIOWeight=100

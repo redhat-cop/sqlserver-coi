@@ -1,0 +1,13 @@
+# Timer unit for mssql.assess.service
+
+[Unit]
+Description=Runs a Microsoft SQL Server assessment 
+
+[Timer]
+Unit=mssql-runassessment.service
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=14400
+
+[Install]
+WantedBy=timers.target
