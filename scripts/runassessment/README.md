@@ -41,6 +41,7 @@ The script performs the following tasks:
 To enable the automatic daily assessments use the command:
 
     sudo systemctl enable mssql-runassessments.timer
+    sudo systemctl start mssql-runassessments.timer
 
 If you want to manually invoke an assessment you should do it as the 
 mssql user using the command:
