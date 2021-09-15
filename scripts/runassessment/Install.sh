@@ -102,7 +102,12 @@ sudo su mssql -c "/usr/bin/pwsh -Command Install-Module SqlServer"
 # Install the runassessment.ps1 utility from Github
 sudo /bin/curl -LJ0 -o /opt/mssql/bin/runassessment.ps1 https://raw.githubusercontent.com/microsoft/sql-server-samples/master/samples/manage/sql-assessment-api/RHEL/runassessment.ps1 
 sudo chown mssql:mssql /opt/mssql/bin/runassessment.ps1
-sudo chmod 700 /opt/mssql/bin/runassessment.ps1
+sudo chmod 0700 /opt/mssql/bin/runassessment.ps1
+
+# Create a directory for the assessment log
+sudo mkdir /var/opt/mssql/log/assessments/
+sudo chown mssql:mssql /var/opt/mssql/log/assessments/
+sudo chmod 0640 /var/opt/mssql/log/assessments/
 
 # Run our first assessment
 sudo su mssql -c "pwsh -File /opt/mssql/bin/runassessment.ps1"
