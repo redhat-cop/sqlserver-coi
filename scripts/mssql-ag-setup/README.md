@@ -16,9 +16,10 @@ on start-up are both important and time consuming.
 Beginnning with SQL Server 2019 CU11, there is a bug which causes Availability 
 Groups to fail if the mssql resource agent is configured to use the fully 
 qualified host name (eg. host1.domain) instead of the system name (eg. host). 
-The latest implementation of these scripts uses this workaround.  Make sure 
-your DNS (or host file) is configured to use system names as well as host 
-names in mappings to IP addresses.
+The latest implementation of these scripts works around this by using the 
+system name.  It is also highly recommended that you specify the specific 
+network addresses that you plan to use for pacemaker communications on your
+hosts.
 
 I used to recommend that you temporarily setup passwordless ssh root host 
 equvalence between the cluster nodes using ssh-keygen and ssh-copy-id but 

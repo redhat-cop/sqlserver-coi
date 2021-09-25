@@ -5,7 +5,7 @@
 # Debug mode.  If set to 1, then unsuccesful sql commands are saved
 # to /tmp.  We do not save them there by default since they can
 # contain passwords.
-DEBUG_MODE=0
+DEBUG_MODE=1
 
 # Update PATH to include sqlcmd as it will be needed
 PATH=$PATH:/opt/mssql-tools/bin
@@ -121,8 +121,19 @@ CLUSTER_TYPE="EXTERNAL"
 #
 # There can be at most 9 servers in a writeable SQL Server Availability Group.
 #
+# In addition to the password, Pacemaker also likes to know which
+# network interfaces to use for it's traffic.  This ideally isn't the 
+# same network interface as you are using for SQL Server replication or
+# for external SQL traffic.  It is possible to just use one network link,
+# but that's not very reliable in an enterprise environment.
+# 
+#
+#
 # The default example sets the hostname but no password. 
-declare -A PRIMARY_SERVER_PASS=(["sql1"]="")
+declare -A PRIMARY_SERVER_PASS=(["sql1.ag1"]="")
+declare -A ALL_SERVERS_ADDR=()
+
+
 
 # You can set the host name and password as follows:
 #
@@ -130,6 +141,15 @@ declare -A PRIMARY_SERVER_PASS=(["sql1"]="")
 #
 # In the above example, the server name is sql1.ag1 and the password is 
 # set to: passwd1
+# 
+# You can set the address as follows:
+#
+#    declare -A PRIMARY_SERVER_ADDR=(["sql1"]="192.168.200.120")
+#
+# You can use a non-default network link by setting the host addresses 
+# in ALL_SERVERS_ADDR using the systemnames (not FQDNs) as keys.
+#
+# ALL_SERVERS_ADDR+=(["sql1"]="192.168.200.120")
 #
 
 # Sync replica servers.  You can have up to 5 syncronous replicas
@@ -139,7 +159,22 @@ declare -A PRIMARY_SERVER_PASS=(["sql1"]="")
 # By default, we'll configure servers sql2.ag1 and sql3.ag1 but leave 
 # the passords unset since we're relying on ssh key's only for security.
 #
-declare -A SYNC_SERVERS_PASS=(["sql2"]="" ["sql3"]="")
+# In addition to the password, Pacemaker also likes to know which
+# network interfaces to use for it's traffic.  This ideally isn't the 
+# same network interface as you are using for SQL Server replication or
+# for external SQL traffic.  It is possible to just use one network link,
+# but that's not very reliable in an enterprise environment.
+#
+declare -A SYNC_SERVERS_PASS=(["sql2.ag1"]="")
+SYNC_SERVERS_PASS+=(["sql3.ag1"]="")
+
+# As above, you can use a non-default network link by setting the host 
+# addresses in ALL_SERVERS_ADDR using the systemnames (not FQDNs) as keys.
+#
+# ALL_SERVERS_ADDR+=(["sql1"]="192.168.200.120")
+#
+# ALL_SERVERS_ADDR+=(["sql2"]="192.168.200.74") 
+# ALL_SERVERS_ADDR+=(["sql3"]="192.168.200.45")
 
 #
 # You can assign passwords as in the following example: 
@@ -148,6 +183,7 @@ declare -A SYNC_SERVERS_PASS=(["sql2"]="" ["sql3"]="")
 #
 # Here the server names sql2.ag1 and sql3.ag1 their respective passwords are
 # set to passwd2 and passwd3
+#
 
 SYNC_SERVERS=${!SYNC_SERVERS_PASS[@]}
 
@@ -158,6 +194,7 @@ SYNC_SERVERS=${!SYNC_SERVERS_PASS[@]}
 #
 # example: 
 # declare -A ASYNC_SERVERS_PASS=(["sql4"]="passwd4" ["sql5"]="passwd5")
+#
 #
 declare -A ASYNC_SERVERS_PASS=()
 ASYNC_SERVERS=${!ASYNC_SERVERS_PASS[@]}
@@ -170,7 +207,7 @@ ASYNC_SERVERS=${!ASYNC_SERVERS_PASS[@]}
 # never actually fail over to it.
 #
 # example: 
-# declare -A CONFIG_ONLY_SERVERS=(["sql6"]="passwd6")
+# declare -A CONFIG_ONLY_SERVERS_PASS=(["sql7"]="passwd6")
 #
 declare -A CONFIG_ONLY_SERVERS_PASS=()
 CONFIG_ONLY_SERVERS=${!CONFIG_ONLY_SERVERS_PASS[@]}
