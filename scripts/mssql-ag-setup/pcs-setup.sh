@@ -58,7 +58,6 @@ server=$PRIMARY_SERVER
 runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs host auth -u hacluster -p "$HACLUSTER_PW" $ALL_SERVERS_NB
 runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster setup $AG_NAME $ALL_SERVERS_NB
 runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" "pcs cluster start --all; sudo pcs cluster enable --all"
-runsshcmd "$server" "${ALL_SERVERS_PASS[$server]}" pcs cluster auth -u hacluster -p "$HACLUSTER_PW"
 
 sleep 3
 echo "Set the recheck interval of pacemaker to 2 minutes"

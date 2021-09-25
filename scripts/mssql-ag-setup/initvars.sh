@@ -32,7 +32,13 @@ ALL_SERVERS_NB=""
 
 for server in $ALL_SERVERS
 do
-    ALL_SERVERS_NB+=`echo $server | awk -F . '{ print $1 }'`" "
+    server=`echo $server | awk -F . '{ print $1 }'`
+    if [ -z ${ALL_SERVERS_ADDR[$server]} ]
+    then
+        ALL_SERVERS_NB="$ALL_SERVERS_NB $server "
+    else
+        ALL_SERVERS_NB="$ALL_SERVERS_NB $server addr=${ALL_SERVERS_ADDR[$server]} "
+    fi
 done
 
 if [ $CLUSTER_TYPE = "EXTERNAL" ]
