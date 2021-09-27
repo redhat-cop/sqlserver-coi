@@ -5,7 +5,7 @@
 # Debug mode.  If set to 1, then unsuccesful sql commands are saved
 # to /tmp.  We do not save them there by default since they can
 # contain passwords.
-DEBUG_MODE=1
+DEBUG_MODE=0
 
 # Update PATH to include sqlcmd as it will be needed
 PATH=$PATH:/opt/mssql-tools/bin
