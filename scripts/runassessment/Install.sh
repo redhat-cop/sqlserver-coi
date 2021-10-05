@@ -107,7 +107,7 @@ sudo chmod 0700 /opt/mssql/bin/runassessment.ps1
 # Create a directory for the assessment log
 sudo mkdir /var/opt/mssql/log/assessments/
 sudo chown mssql:mssql /var/opt/mssql/log/assessments/
-sudo chmod 0640 /var/opt/mssql/log/assessments/
+sudo chmod 0700 /var/opt/mssql/log/assessments/
 
 # Run our first assessment
 sudo su mssql -c "pwsh -File /opt/mssql/bin/runassessment.ps1"
