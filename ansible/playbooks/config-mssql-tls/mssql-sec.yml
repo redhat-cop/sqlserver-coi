@@ -1,0 +1,28 @@
+---
+- hosts: localhost
+  vars:
+    certificate_requests:
+      - name: mssql
+        dns: rhel4mssql.ag1.localdomain
+        ca: local
+        key_usage:
+          - keyEncipherment
+        extended_key_usage:
+          - id-kp-serverAuth
+
+  roles:
+    - rhel-system-roles.certificate
+
+- hosts: localhost
+  vars:
+    mssql_accept_microsoft_odbc_driver_17_for_sql_server_eula: true
+    mssql_accept_microsoft_cli_utilities_for_sql_server_eula: true
+    mssql_accept_microsoft_sql_server_standard_eula: true
+    mssql_tls_enable: true
+    mssql_tls_cert: /etc/pki/tls/certs/mssql.crt
+    mssql_tls_private_key: /etc/pki/tls/private/mssql.key
+    mssql_tls_version: 1.2
+    mssql_tls_force: true
+
+  roles:
+    - microsoft.sql.server
