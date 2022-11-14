@@ -1,0 +1,8 @@
+all:
+  hosts:
+    mssql1:
+      mssql_ha_replica_type: primary
+    mssql2:
+      mssql_ha_replica_type: synchronous
+    mssql3:
+      mssql_ha_replica_type: witness

@@ -1,0 +1,15 @@
+- hosts: all
+  vars:
+    mssql_accept_microsoft_odbc_driver_17_for_sql_server_eula: true
+    mssql_accept_microsoft_cli_utilities_for_sql_server_eula: true
+    mssql_accept_microsoft_sql_server_standard_eula: true
+    mssql_firewall_configure: true
+    mssql_password: "RedH@123!"
+    mssql_edition: Developer
+    mssql_debug: true
+  tasks:
+    - name: Configure SQL Server 
+      include_role:
+        name: microsoft.sql.server
+      when: mssql_ha_replica_type == 'synchronous' or mssql_ha_replica_type == 'witness'
+
